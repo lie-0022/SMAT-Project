@@ -16,7 +16,7 @@ public class Lecture {
     @Column(name = "professor", nullable = false)
     private String professor;
     
-    @Column(name = "day", nullable = false)
+    @Column(name = "lecture_day", nullable = false)
     private String day; // 월, 화, 수, 목, 금
     
     @Column(name = "time", nullable = false)
