@@ -1,0 +1,21 @@
+# --- IntelliJ 설정 파일 ---
+.idea/
+*.iml
+
+# --- Java & Spring Boot (Backend) ---
+backend/build/
+backend/.gradle/
+backend/out/
+*.class
+*.log
+*.jar
+*.war
+
+# --- Node.js & React Native (Frontend) ---
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.env
