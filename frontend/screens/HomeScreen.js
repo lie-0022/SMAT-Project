@@ -1,11 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import client from '../src/api/client';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
+  const [healthStatus, setHealthStatus] = useState({ message: 'Checking backend...', isError: false, isLoading: true });
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const response = await client.get('/api/health'); // Assuming endpoint returns plain text or JSON
+        // Adjust based on actual string response or object. 
+        // User request says: "Backend is Active!" message. 
+        // If the backend returns that string directly:
+        setHealthStatus({ message: 'Backend is Active!', isError: false, isLoading: false });
+      } catch (error) {
+        console.error("Health check failed:", error);
+        setHealthStatus({ message: 'Backend Connection Failed', isError: true, isLoading: false });
+      }
+    };
+    checkHealth();
+  }, []);
   // Mock Data
   const currentDate = "11월 29일 금요일"; // Fixed date as per request example/context
   const userName = "백석";
@@ -38,6 +56,13 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {/* Backend Health Status */}
+        <View style={[styles.card, { alignItems: 'center', marginBottom: 20, backgroundColor: healthStatus.isError ? '#FFEBEE' : '#E8F5E9' }]}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: healthStatus.isError ? '#D32F2F' : '#388E3C' }}>
+            {healthStatus.message}
+          </Text>
+        </View>
 
         {/* 1. Header */}
         <View style={styles.header}>
