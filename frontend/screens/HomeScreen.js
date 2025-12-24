@@ -8,24 +8,54 @@ const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const [healthStatus, setHealthStatus] = useState({ message: 'Checking backend...', isError: false, isLoading: true });
+  const [lunchMenu, setLunchMenu] = useState(null);
+  const [nextClass, setNextClass] = useState(null);
 
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await client.get('/api/health'); // Assuming endpoint returns plain text or JSON
-        // Adjust based on actual string response or object. 
-        // User request says: "Backend is Active!" message. 
-        // If the backend returns that string directly:
+        const response = await client.get('/api/health');
         setHealthStatus({ message: 'Backend is Active!', isError: false, isLoading: false });
       } catch (error) {
         console.error("Health check failed:", error);
         setHealthStatus({ message: 'Backend Connection Failed', isError: true, isLoading: false });
       }
     };
+
+    const fetchLunchMenu = async () => {
+      try {
+        const response = await client.get('/api/campus/menus');
+        console.log("Menu Data:", response.data);
+        const lunch = response.data.find(item => item.timeType === '중식');
+        if (lunch) {
+          console.log("Found Lunch:", lunch);
+          setLunchMenu(lunch);
+        } else {
+          setLunchMenu(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch menu:", error);
+      }
+    };
+
+    const fetchNextClass = async () => {
+      try {
+        const response = await client.get('/api/schedule/next');
+        console.log("Next Class Data:", response.data);
+        setNextClass(response.data); // Assuming null or empty object if no class, or specific structure
+      } catch (error) {
+        console.error("Failed to fetch next class:", error);
+        setNextClass(null);
+      }
+    };
+
     checkHealth();
+    fetchLunchMenu();
+    fetchNextClass();
   }, []);
+
   // Mock Data
-  const currentDate = "11월 29일 금요일"; // Fixed date as per request example/context
+  const currentDate = "11월 29일 금요일";
   const userName = "백석";
 
   const weatherData = {
@@ -35,16 +65,7 @@ const HomeScreen = () => {
     message: "오늘 쌀쌀해요, 겉옷 챙기세요!",
   };
 
-  const nextClass = {
-    hasClassName: true,
-    text: "⏳ 곧 시작하는 수업: 자료구조 (14:00)",
-  };
-  // Alternative for no class:
-  // const nextClass = { hasClassName: false, text: "오늘 수업 끝! 자유시간을 즐기세요 🎉" };
-
-  const lunchMenu = {
-    title: "🍴 오늘 점심: 왕돈까스 & 우동 (학생식당)",
-  };
+  // nextClass mock removed
 
   const quickActions = [
     { id: 1, title: '셔틀버스', icon: 'bus', color: '#4A90E2' },
@@ -98,13 +119,31 @@ const HomeScreen = () => {
         </View>
 
         {/* 4. Coming Up (Next Class) */}
-        <View style={[styles.card, styles.highlightCard]}>
-          <Text style={styles.highlightText}>{nextClass.text}</Text>
+        <View style={[
+          styles.card,
+          nextClass ? styles.highlightCard : { backgroundColor: '#E8F5E9', borderLeftWidth: 4, borderLeftColor: '#4CAF50' }
+        ]}>
+          <Text style={[
+            styles.highlightText,
+            !nextClass && { color: '#2E7D32' }
+          ]}>
+            {nextClass
+              ? `⏳ 곧 시작하는 수업: ${nextClass.className} (${nextClass.startTime})`
+              : "오늘 수업 끝! 자유시간을 즐기세요 🎉"
+            }
+          </Text>
         </View>
 
         {/* 5. Today's Pick (Cafeteria) */}
         <View style={styles.card}>
-          <Text style={styles.cafeteriaText}>{lunchMenu.title}</Text>
+          <Text style={styles.cafeteriaText}>
+            {lunchMenu ? `🍴 오늘 점심: ${lunchMenu.menuName}` : "오늘은 학식이 없어요 😢"}
+          </Text>
+          {lunchMenu && lunchMenu.price && (
+            <Text style={{ marginTop: 5, color: '#666', fontSize: 14 }}>
+              가격: {lunchMenu.price}원
+            </Text>
+          )}
         </View>
 
       </ScrollView>
