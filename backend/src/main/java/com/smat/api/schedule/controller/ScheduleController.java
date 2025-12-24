@@ -47,4 +47,20 @@ public class ScheduleController {
         List<LectureResponseDto> lectures = scheduleService.getScheduleByDay(day);
         return ResponseEntity.ok(lectures);
     }
+    
+    /**
+     * 다음 수업을 조회하는 API
+     * 현재 시간 이후에 시작하는 가장 빠른 수업 1개를 반환합니다.
+     * 
+     * @return 다음 수업 정보 (없으면 null)
+     */
+    @Operation(summary = "다음 수업 조회", description = "현재 시간 이후의 다음 수업을 조회합니다.")
+    @GetMapping("/next")
+    public ResponseEntity<LectureResponseDto> getNextLecture() {
+        LectureResponseDto nextLecture = scheduleService.getNextLecture();
+        if (nextLecture == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(nextLecture);
+    }
 }

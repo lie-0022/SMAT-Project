@@ -12,7 +12,10 @@ import com.smat.api.community.repository.PostRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -78,10 +81,10 @@ public class DataLoader implements CommandLineRunner {
         // 2. 오늘 날짜의 메뉴 데이터 생성
         LocalDate today = LocalDate.now();
         
-        // 학생식당 메뉴
-        menuRepository.save(new Menu(null, today, "조식", "토스트+계란후라이+우유", 3000, studentRestaurant.getId()));
-        menuRepository.save(new Menu(null, today, "중식", "치즈돈까스+밥+된장국+김치", 5500, studentRestaurant.getId()));
-        menuRepository.save(new Menu(null, today, "석식", "제육볶음+밥+계란국+김치", 5000, studentRestaurant.getId()));
+        // 학생식당 메뉴 (오늘 날짜)
+        menuRepository.save(new Menu(null, today, "조식", "소고기무국", 4000, studentRestaurant.getId()));
+        menuRepository.save(new Menu(null, today, "중식", "눈꽃치즈돈까스 & 미니우동", 5500, studentRestaurant.getId()));
+        menuRepository.save(new Menu(null, today, "석식", "참치마요덮밥", 4500, studentRestaurant.getId()));
         
         // 교직원식당 메뉴
         menuRepository.save(new Menu(null, today, "중식", "김치찌개+밥+샐러드+과일", 6000, facultyRestaurant.getId()));
@@ -110,6 +113,36 @@ public class DataLoader implements CommandLineRunner {
      * 시간표 데이터 로딩
      */
     private void loadScheduleData() {
+        // 현재 날짜와 시간 가져오기
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+        
+        // 오늘 요일을 한글로 변환
+        String todayKorean = getDayOfWeekKorean(dayOfWeek);
+        
+        // 1시간 후 시간 계산 (예: 현재 14:30 -> 15:30)
+        LocalTime oneHourLater = now.plusHours(1);
+        LocalTime twoHoursLater = oneHourLater.plusHours(1).plusMinutes(30);
+        
+        // 시간 포맷 (HH:mm)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        String startTime = oneHourLater.format(formatter);
+        String endTime = twoHoursLater.format(formatter);
+        String timeRange = startTime + "-" + endTime;
+        
+        // 오늘 + 1시간 후에 시작하는 강의 추가 (테스트용)
+        lectureRepository.save(new Lecture(
+            null, 
+            "알고리즘 특강", 
+            "최지훈 교수", 
+            todayKorean, 
+            timeRange, 
+            "공학관 401"
+        ));
+        
+        System.out.println("✅ [테스트용] 오늘(" + todayKorean + "요일) " + startTime + " 시작 수업 생성 완료");
+        
         // 월요일 강의
         lectureRepository.save(new Lecture(null, "자료구조", "김철수 교수", "월", "09:00-10:30", "공학관 301"));
         lectureRepository.save(new Lecture(null, "웹프로그래밍", "이영희 교수", "월", "10:30-12:00", "공학관 405"));
@@ -134,6 +167,30 @@ public class DataLoader implements CommandLineRunner {
         lectureRepository.save(new Lecture(null, "모바일프로그래밍", "안수진 교수", "금", "13:00-15:00", "공학관 502"));
         
         System.out.println("✅ 시간표 데이터 생성 완료");
+    }
+    
+    /**
+     * 영문 요일을 한글 요일로 변환
+     */
+    private String getDayOfWeekKorean(DayOfWeek dayOfWeek) {
+        switch (dayOfWeek) {
+            case MONDAY:
+                return "월";
+            case TUESDAY:
+                return "화";
+            case WEDNESDAY:
+                return "수";
+            case THURSDAY:
+                return "목";
+            case FRIDAY:
+                return "금";
+            case SATURDAY:
+                return "토";
+            case SUNDAY:
+                return "일";
+            default:
+                return "";
+        }
     }
     
     /**
