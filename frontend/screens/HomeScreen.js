@@ -10,48 +10,59 @@ const HomeScreen = () => {
   const [healthStatus, setHealthStatus] = useState({ message: 'Checking backend...', isError: false, isLoading: true });
   const [lunchMenu, setLunchMenu] = useState(null);
   const [nextClass, setNextClass] = useState(null);
+  const [recentPosts, setRecentPosts] = useState([]);
 
   useEffect(() => {
-    const checkHealth = async () => {
+    const fetchData = async () => {
       try {
-        const response = await client.get('/api/health');
-        setHealthStatus({ message: 'Backend is Active!', isError: false, isLoading: false });
-      } catch (error) {
-        console.error("Health check failed:", error);
-        setHealthStatus({ message: 'Backend Connection Failed', isError: true, isLoading: false });
-      }
-    };
+        // Parallel requests
+        const [healthRes, menuRes, nextClassRes, recentPostsRes] = await Promise.allSettled([
+          client.get('/api/health'),
+          client.get('/api/campus/menus'),
+          client.get('/api/schedule/next'),
+          client.get('/api/community/recent')
+        ]);
 
-    const fetchLunchMenu = async () => {
-      try {
-        const response = await client.get('/api/campus/menus');
-        console.log("Menu Data:", response.data);
-        const lunch = response.data.find(item => item.timeType === '중식');
-        if (lunch) {
-          console.log("Found Lunch:", lunch);
-          setLunchMenu(lunch);
+        // 1. Health Check
+        if (healthRes.status === 'fulfilled') {
+          setHealthStatus({ message: 'Backend is Active!', isError: false, isLoading: false });
         } else {
-          setLunchMenu(null);
+          console.error("Health check failed:", healthRes.reason);
+          setHealthStatus({ message: 'Backend Connection Failed', isError: true, isLoading: false });
         }
+
+        // 2. Lunch Menu
+        if (menuRes.status === 'fulfilled') {
+          const lunch = menuRes.value.data.find(item => item.timeType === '중식');
+          setLunchMenu(lunch || null);
+        } else {
+          console.error("Failed to fetch menu:", menuRes.reason);
+        }
+
+        // 3. Next Class
+        if (nextClassRes.status === 'fulfilled') {
+          // Assuming 200 OK means we have data, or it might be empty if no class.
+          // Check if data is populated.
+          setNextClass(nextClassRes.value.data || null);
+        } else {
+          // If 404 or other error, likely no class or error
+          console.log("No next class or error:", nextClassRes.reason);
+          setNextClass(null);
+        }
+
+        // 4. Recent Posts
+        if (recentPostsRes.status === 'fulfilled') {
+          setRecentPosts(recentPostsRes.value.data || []);
+        } else {
+          console.error("Failed to fetch recent posts:", recentPostsRes.reason);
+        }
+
       } catch (error) {
-        console.error("Failed to fetch menu:", error);
+        console.error("Critical Error in fetchData:", error);
       }
     };
 
-    const fetchNextClass = async () => {
-      try {
-        const response = await client.get('/api/schedule/next');
-        console.log("Next Class Data:", response.data);
-        setNextClass(response.data); // Assuming null or empty object if no class, or specific structure
-      } catch (error) {
-        console.error("Failed to fetch next class:", error);
-        setNextClass(null);
-      }
-    };
-
-    checkHealth();
-    fetchLunchMenu();
-    fetchNextClass();
+    fetchData();
   }, []);
 
   // Mock Data
@@ -64,8 +75,6 @@ const HomeScreen = () => {
     temp: "12°C",
     message: "오늘 쌀쌀해요, 겉옷 챙기세요!",
   };
-
-  // nextClass mock removed
 
   const quickActions = [
     { id: 1, title: '셔틀버스', icon: 'bus', color: '#4A90E2' },
@@ -128,7 +137,7 @@ const HomeScreen = () => {
             !nextClass && { color: '#2E7D32' }
           ]}>
             {nextClass
-              ? `⏳ 곧 시작하는 수업: ${nextClass.className} (${nextClass.startTime})`
+              ? `⏳ ${nextClass.className} (${nextClass.startTime} ~ ${nextClass.endTime})${nextClass.place ? `\n📍 ${nextClass.place}` : ''}`
               : "오늘 수업 끝! 자유시간을 즐기세요 🎉"
             }
           </Text>
@@ -144,6 +153,27 @@ const HomeScreen = () => {
               가격: {lunchMenu.price}원
             </Text>
           )}
+        </View>
+
+        {/* 6. Recent Announcements */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📢 최신 공지사항</Text>
+          <View style={styles.card}>
+            {recentPosts.length > 0 ? (
+              recentPosts.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={styles.postItem}
+                  onPress={() => console.log(`Post clicked: ${post.title}`)}
+                >
+                  <Text style={styles.postTitle} numberOfLines={1}>{post.title}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#999" />
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>공지사항이 없습니다.</Text>
+            )}
+          </View>
         </View>
 
       </ScrollView>
@@ -243,6 +273,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  postItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  postTitle: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+    marginRight: 10,
+  },
+  emptyText: {
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
 });
 
