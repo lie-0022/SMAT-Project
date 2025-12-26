@@ -41,9 +41,20 @@ const HomeScreen = () => {
 
         // 3. Next Class
         if (nextClassRes.status === 'fulfilled') {
-          // Assuming 200 OK means we have data, or it might be empty if no class.
-          // Check if data is populated.
-          setNextClass(nextClassRes.value.data || null);
+          const data = nextClassRes.value.data;
+          console.log("Next Class Raw Data:", data);
+
+          if (data) {
+            const [start, end] = data.time ? data.time.split('-') : ["", ""];
+            setNextClass({
+              className: data.name,
+              place: data.room,
+              startTime: start,
+              endTime: end
+            });
+          } else {
+            setNextClass(null);
+          }
         } else {
           // If 404 or other error, likely no class or error
           console.log("No next class or error:", nextClassRes.reason);
