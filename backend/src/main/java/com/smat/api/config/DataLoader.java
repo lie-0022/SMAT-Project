@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -131,17 +132,17 @@ public class DataLoader implements CommandLineRunner {
         String endTime = twoHoursLater.format(formatter);
         String timeRange = startTime + "-" + endTime;
         
-        // 오늘 + 1시간 후에 시작하는 강의 추가 (테스트용)
+        // ⭐ 오늘 + 1시간 후에 시작하는 강의 추가 (홈 화면 '다음 수업' 위젯용)
         lectureRepository.save(new Lecture(
             null, 
-            "알고리즘 특강", 
+            "알고리즘", 
             "최지훈 교수", 
             todayKorean, 
             timeRange, 
-            "공학관 401"
+            "공학관 301"
         ));
         
-        System.out.println("✅ [테스트용] 오늘(" + todayKorean + "요일) " + startTime + " 시작 수업 생성 완료");
+        System.out.println("✅ [홈 화면용] 오늘(" + todayKorean + "요일) " + startTime + " 시작 '다음 수업' 생성 완료");
         
         // 월요일 강의
         lectureRepository.save(new Lecture(null, "자료구조", "김철수 교수", "월", "09:00-10:30", "공학관 301"));
@@ -197,7 +198,58 @@ public class DataLoader implements CommandLineRunner {
      * 커뮤니티 데이터 로딩
      */
     private void loadCommunityData() {
-        // TAXI 카테고리
+        LocalDateTime now = LocalDateTime.now();
+        
+        // ⭐ 홈 화면용 최신 공지사항 (시간 간격을 두고 생성)
+        postRepository.save(new Post(
+            null, 
+            Category.TEAM, 
+            "셔틀버스 시간표 변경 안내", 
+            "12월 27일부터 셔틀버스 운행 시간이 변경됩니다. 오전 첫차: 7:30 → 7:00으로 앞당겨집니다.",
+            "학생지원팀",
+            null,
+            null,
+            null,
+            now.minusMinutes(5) // 5분 전
+        ));
+        
+        postRepository.save(new Post(
+            null, 
+            Category.TEAM, 
+            "중간고사 기간 도서관 24시간 개방", 
+            "중간고사 기간(12/28 ~ 1/10) 동안 중앙도서관이 24시간 개방됩니다. 열람실 좌석은 선착순입니다.",
+            "도서관",
+            null,
+            null,
+            null,
+            now.minusMinutes(30) // 30분 전
+        ));
+        
+        postRepository.save(new Post(
+            null, 
+            Category.BOOK, 
+            "오늘의 학식 메뉴 추천", 
+            "학생식당 중식 메뉴 '눈꽃치즈돈까스'가 정말 맛있다고 합니다! 미니우동도 함께 나와요.",
+            "맛집탐방러",
+            null,
+            null,
+            null,
+            now.minusHours(1) // 1시간 전
+        ));
+        
+        postRepository.save(new Post(
+            null, 
+            Category.TEAM, 
+            "겨울방학 현장실습 모집 안내", 
+            "겨울방학 기간 IT 기업 현장실습 프로그램에 참여할 학생을 모집합니다. 신청 기간: 12/26 ~ 1/5",
+            "취업지원센터",
+            null,
+            null,
+            null,
+            now.minusHours(2) // 2시간 전
+        ));
+        
+        // 기존 TAXI 카테고리
         postRepository.save(new Post(
             null, 
             Category.TAXI, 
@@ -206,7 +258,8 @@ public class DataLoader implements CommandLineRunner {
             "김택시",
             4000,
             2,
-            4
+            4,
+            now.minusHours(3)
         ));
         
         postRepository.save(new Post(
@@ -217,7 +270,8 @@ public class DataLoader implements CommandLineRunner {
             "이쇼핑",
             3000,
             1,
-            4
+            4,
+            now.minusHours(5)
         ));
         
         postRepository.save(new Post(
@@ -228,7 +282,8 @@ public class DataLoader implements CommandLineRunner {
             "박급해",
             5000,
             1,
-            3
+            3,
+            now.minusHours(6)
         ));
         
         // BOOK 카테고리
@@ -240,7 +295,8 @@ public class DataLoader implements CommandLineRunner {
             "최자바",
             15000,
             null,
-            null
+            null,
+            now.minusHours(8)
         ));
         
         postRepository.save(new Post(
@@ -251,7 +307,8 @@ public class DataLoader implements CommandLineRunner {
             "정운영",
             20000,
             null,
-            null
+            null,
+            now.minusHours(10)
         ));
         
         postRepository.save(new Post(
@@ -262,7 +319,8 @@ public class DataLoader implements CommandLineRunner {
             "김토익",
             20000,
             null,
-            null
+            null,
+            now.minusHours(12)
         ));
         
         postRepository.save(new Post(
@@ -273,7 +331,8 @@ public class DataLoader implements CommandLineRunner {
             "박알고",
             25000,
             null,
-            null
+            null,
+            now.minusHours(15)
         ));
         
         // TEAM 카테고리
@@ -285,7 +344,8 @@ public class DataLoader implements CommandLineRunner {
             "이팀장",
             null,
             3,
-            4
+            4,
+            now.minusHours(18)
         ));
         
         postRepository.save(new Post(
@@ -296,7 +356,8 @@ public class DataLoader implements CommandLineRunner {
             "송공모",
             null,
             2,
-            5
+            5,
+            now.minusHours(20)
         ));
         
         postRepository.save(new Post(
@@ -307,7 +368,8 @@ public class DataLoader implements CommandLineRunner {
             "장스터디",
             null,
             4,
-            6
+            6,
+            now.minusHours(24)
         ));
         
         postRepository.save(new Post(
@@ -318,9 +380,10 @@ public class DataLoader implements CommandLineRunner {
             "최해커",
             null,
             2,
-            4
+            4,
+            now.minusHours(30)
         ));
         
-        System.out.println("✅ 커뮤니티 데이터 생성 완료");
+        System.out.println("✅ 커뮤니티 데이터 생성 완료 (최신 글 포함)");
     }
 }

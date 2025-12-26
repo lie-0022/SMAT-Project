@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,6 +43,22 @@ public class CommunityService {
     }
     
     /**
+     * 최신 게시글 조회 (상위 5개)
+     * 
+     * @return 최신 게시글 리스트 (최대 5개)
+     */
+    public List<PostResponseDto> getRecentPosts() {
+        List<Post> posts = postRepository.findRecentPosts();
+        
+        // 상위 5개만 선택
+        List<Post> recentPosts = posts.stream()
+                .limit(5)
+                .collect(Collectors.toList());
+        
+        return convertToDto(recentPosts);
+    }
+    
+    /**
      * Post 리스트를 DTO로 변환
      */
     private List<PostResponseDto> convertToDto(List<Post> posts) {
@@ -55,7 +72,8 @@ public class CommunityService {
                 post.getWriter(),
                 post.getPrice(),
                 post.getCurrentPeople(),
-                post.getMaxPeople()
+                post.getMaxPeople(),
+                post.getCreatedDate()
             );
             response.add(dto);
         }

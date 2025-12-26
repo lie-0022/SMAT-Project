@@ -48,4 +48,17 @@ public class CommunityController {
         List<PostResponseDto> posts = communityService.getPostsByCategory(category);
         return ResponseEntity.ok(posts);
     }
+    
+    /**
+     * 최신 게시글 목록 조회
+     * 홈 화면에서 사용할 최신 게시글 5개를 반환합니다.
+     * 
+     * @return 최신 게시글 리스트 (최대 5개)
+     */
+    @Operation(summary = "최신 게시글 조회", description = "작성일 기준 최신 게시글 5개를 조회합니다.")
+    @GetMapping("/recent")
+    public ResponseEntity<List<PostResponseDto>> getRecentPosts() {
+        List<PostResponseDto> posts = communityService.getRecentPosts();
+        return ResponseEntity.ok(posts);
+    }
 }

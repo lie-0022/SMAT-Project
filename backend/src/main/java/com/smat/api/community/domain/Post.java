@@ -1,6 +1,7 @@
 package com.smat.api.community.domain;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "post")
@@ -32,13 +33,17 @@ public class Post {
     @Column(name = "max_people")
     private Integer maxPeople; // 최대 모집 인원
     
+    @Column(name = "created_date")
+    private LocalDateTime createdDate; // 작성일
+    
     // 기본 생성자
     public Post() {
+        this.createdDate = LocalDateTime.now();
     }
     
     // 생성자
     public Post(Long id, Category category, String title, String content, String writer, 
-                Integer price, Integer currentPeople, Integer maxPeople) {
+                Integer price, Integer currentPeople, Integer maxPeople, LocalDateTime createdDate) {
         this.id = id;
         this.category = category;
         this.title = title;
@@ -47,6 +52,7 @@ public class Post {
         this.price = price;
         this.currentPeople = currentPeople;
         this.maxPeople = maxPeople;
+        this.createdDate = createdDate != null ? createdDate : LocalDateTime.now();
     }
     
     // Getter & Setter
@@ -112,5 +118,13 @@ public class Post {
     
     public void setMaxPeople(Integer maxPeople) {
         this.maxPeople = maxPeople;
+    }
+    
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+    
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
     }
 }

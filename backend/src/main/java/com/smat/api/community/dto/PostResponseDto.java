@@ -2,6 +2,8 @@ package com.smat.api.community.dto;
 
 import com.smat.api.community.domain.Category;
 
+import java.time.LocalDateTime;
+
 public class PostResponseDto {
     
     private Long id;
@@ -12,6 +14,7 @@ public class PostResponseDto {
     private Integer price;
     private Integer currentPeople;
     private Integer maxPeople;
+    private LocalDateTime createdDate;
     
     // 기본 생성자
     public PostResponseDto() {
@@ -19,7 +22,7 @@ public class PostResponseDto {
     
     // 생성자
     public PostResponseDto(Long id, Category category, String title, String content, String writer, 
-                           Integer price, Integer currentPeople, Integer maxPeople) {
+                           Integer price, Integer currentPeople, Integer maxPeople, LocalDateTime createdDate) {
         this.id = id;
         this.category = category;
         this.title = title;
@@ -28,6 +31,7 @@ public class PostResponseDto {
         this.price = price;
         this.currentPeople = currentPeople;
         this.maxPeople = maxPeople;
+        this.createdDate = createdDate;
     }
     
     // Getter & Setter
@@ -93,5 +97,13 @@ public class PostResponseDto {
     
     public void setMaxPeople(Integer maxPeople) {
         this.maxPeople = maxPeople;
+    }
+    
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+    
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
     }
 }
