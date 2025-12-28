@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, TouchableWithoutFeedback, TextInput, Keyboard, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const MyPageScreen = () => {
     // State
     const [pushEnabled, setPushEnabled] = useState(true);
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-    // Mock Data
-    const userProfile = {
+    // Profile State
+    const [userProfile, setUserProfile] = useState({
         name: '김백석',
         major: '소프트웨어학과',
         studentId: '20231234',
-    };
+    });
+
+    // Edit Modal State
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editForm, setEditForm] = useState({
+        name: '',
+        major: '',
+        studentId: '',
+    });
 
     const menuItems = [
         { id: '1', title: '내 정보 수정', icon: 'person-outline', type: 'link' },
@@ -24,10 +33,21 @@ const MyPageScreen = () => {
         { id: '6', title: '로그아웃', icon: 'log-out-outline', color: '#FF5252', type: 'action', action: () => setLogoutModalVisible(true) },
     ];
 
+    const { logout } = useAuth();
+
     const handleLogout = () => {
-        // Implement logout logic here
-        console.log("Logged out");
+        logout();
         setLogoutModalVisible(false);
+    };
+
+    const handleEditOpen = () => {
+        setEditForm(userProfile);
+        setEditModalVisible(true);
+    };
+
+    const handleEditSave = () => {
+        setUserProfile(editForm);
+        setEditModalVisible(false);
     };
 
     return (
@@ -47,7 +67,7 @@ const MyPageScreen = () => {
                         <Text style={styles.userMajor}>{userProfile.major}</Text>
                         <Text style={styles.userId}>{userProfile.studentId}</Text>
                     </View>
-                    <TouchableOpacity style={styles.editButton}>
+                    <TouchableOpacity style={styles.editButton} onPress={handleEditOpen}>
                         <Ionicons name="pencil" size={16} color="#666" />
                     </TouchableOpacity>
                 </View>
@@ -61,7 +81,10 @@ const MyPageScreen = () => {
                                 styles.menuItem,
                                 index === menuItems.length - 1 && { borderBottomWidth: 0 }
                             ]}
-                            onPress={item.type === 'action' ? item.action : null}
+                            onPress={
+                                item.type === 'action' ? item.action :
+                                    item.type === 'link' ? () => Alert.alert('알림', '준비 중인 기능입니다.') : null
+                            }
                             disabled={item.type === 'toggle'}
                         >
                             <View style={styles.menuLeft}>
@@ -89,6 +112,59 @@ const MyPageScreen = () => {
                     ))}
                 </View>
             </ScrollView>
+
+            {/* Edit Profile Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={editModalVisible}
+                onRequestClose={() => setEditModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.editModalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>내 정보 수정</Text>
+                                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                                    <Ionicons name="close" size={24} color="#333" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>이름</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.name}
+                                    onChangeText={(text) => setEditForm(prev => ({ ...prev, name: text }))}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>학과</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.major}
+                                    onChangeText={(text) => setEditForm(prev => ({ ...prev, major: text }))}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>학번</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.studentId}
+                                    onChangeText={(text) => setEditForm(prev => ({ ...prev, studentId: text }))}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+
+                            <TouchableOpacity style={styles.saveButton} onPress={handleEditSave}>
+                                <Text style={styles.saveButtonText}>저장</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
 
             {/* Logout Confirmation Modal */}
             <Modal
@@ -282,6 +358,53 @@ const styles = StyleSheet.create({
     },
     logoutButtonText: {
         color: 'white',
+        fontWeight: 'bold',
+    },
+
+    // Edit Modal Specific Styles
+    editModalContent: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#666',
+        marginBottom: 8,
+    },
+    input: {
+        backgroundColor: '#F5F5F5',
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 16,
+        color: '#333',
+    },
+    saveButton: {
+        backgroundColor: '#4A90E2',
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    saveButtonText: {
+        color: 'white',
+        fontSize: 16,
         fontWeight: 'bold',
     },
 });

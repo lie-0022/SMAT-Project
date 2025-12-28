@@ -129,8 +129,14 @@ const HomeScreen = ({ navigation }) => {
 
         {/* 1. Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>안녕하세요, {userName}님! 👋</Text>
-          <Text style={styles.dateText}>{currentDate}</Text>
+          <View>
+            <Text style={styles.greeting}>안녕하세요, {userName}님! 👋</Text>
+            <Text style={styles.dateText}>{currentDate}</Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={28} color="#333" />
+            <View style={styles.notificationBadge} />
+          </TouchableOpacity>
         </View>
 
         {/* 2. Weather Card */}
@@ -271,13 +277,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF5252',
+    borderWidth: 2,
+    borderColor: '#F5F8FF',
   },
   dateText: {
     fontSize: 16,

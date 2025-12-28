@@ -8,4 +8,24 @@ const client = axios.create({
     baseURL,
 });
 
+export const getTimetable = async () => {
+    try {
+        const response = await client.get('/api/schedule');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching timetable:', error);
+        return [];
+    }
+};
+
+export const getMenus = async (date) => {
+    try {
+        const response = await client.get(`/api/campus/menus?date=${date}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching menus:', error);
+        return [];
+    }
+};
+
 export default client;

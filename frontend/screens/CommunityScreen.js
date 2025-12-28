@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,7 +9,7 @@ const CATEGORIES = [
     { id: 'TEAM', name: '팀원모집' },
 ];
 
-const MOCK_POSTS = {
+const INITIAL_POSTS = {
     TAXI: [
         { id: '1', title: '천안역 4명 모집 (2/4)', start: '천안역', end: '학교', time: '10분 전', author: '익명', status: '모집중', current: 2, max: 4 },
         { id: '2', title: '터미널 가실 분 구해요', start: '학교', end: '터미널', time: '30분 전', author: '익명', status: '완료', current: 4, max: 4 },
@@ -24,8 +24,48 @@ const MOCK_POSTS = {
     ],
 };
 
-const CommunityScreen = () => {
+const CommunityScreen = ({ navigation }) => {
     const [selectedCategory, setSelectedCategory] = useState('TAXI');
+    const [posts, setPosts] = useState(INITIAL_POSTS);
+
+    // Write Post Modal State
+    const [writeModalVisible, setWriteModalVisible] = useState(false);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [writeCategory, setWriteCategory] = useState('TAXI');
+
+    const handleWriteButton = () => {
+        setWriteCategory(selectedCategory); // Default to current tab
+        setTitle('');
+        setContent('');
+        setWriteModalVisible(true);
+    };
+
+    const handleSubmitPost = () => {
+        if (!title.trim() || !content.trim()) {
+            Alert.alert('알림', '제목과 내용을 모두 입력해주세요.');
+            return;
+        }
+
+        const newPost = {
+            id: Date.now().toString(),
+            title: title,
+            time: '방금 전',
+            author: '나(글쓴이)',
+            status: '모집중', // Default status
+            // Specific fields based on category (mock defaults)
+            ...(writeCategory === 'TAXI' ? { start: '출발지', end: '목적지', current: 1, max: 4 } : {}),
+            ...(writeCategory === 'BOOK' ? { price: '가격미정', seller: '나' } : {}),
+            ...(writeCategory === 'TEAM' ? { role: '역할무관', content: content } : {}),
+        };
+
+        setPosts(prev => ({
+            ...prev,
+            [writeCategory]: [newPost, ...prev[writeCategory]]
+        }));
+
+        setWriteModalVisible(false);
+    };
 
     const renderPostItem = ({ item }) => (
         <TouchableOpacity style={styles.card}>
@@ -68,6 +108,9 @@ const CommunityScreen = () => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>커뮤니티</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('ChatList')}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
+                </TouchableOpacity>
             </View>
 
             {/* Category Tabs */}
@@ -86,17 +129,74 @@ const CommunityScreen = () => {
             </View>
 
             <FlatList
-                data={MOCK_POSTS[selectedCategory]}
+                data={posts[selectedCategory]}
                 renderItem={renderPostItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<Text style={styles.emptyText}>게시글이 없습니다.</Text>}
             />
 
             {/* Floating Action Button */}
-            <TouchableOpacity style={styles.fab}>
+            <TouchableOpacity style={styles.fab} onPress={handleWriteButton}>
                 <Ionicons name="add" size={30} color="white" />
             </TouchableOpacity>
+
+            {/* Write Post Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={writeModalVisible}
+                onRequestClose={() => setWriteModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>글쓰기</Text>
+                                <TouchableOpacity onPress={() => setWriteModalVisible(false)}>
+                                    <Ionicons name="close" size={24} color="#333" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Category Selection in Modal */}
+                            <View style={styles.modalCategoryRow}>
+                                {CATEGORIES.map((cat) => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[styles.modalCategoryBtn, writeCategory === cat.id && styles.modalCategoryBtnActive]}
+                                        onPress={() => setWriteCategory(cat.id)}
+                                    >
+                                        <Text style={[styles.modalCategoryText, writeCategory === cat.id && styles.modalCategoryTextActive]}>
+                                            {cat.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <TextInput
+                                style={styles.inputTitle}
+                                placeholder="제목을 입력하세요"
+                                value={title}
+                                onChangeText={setTitle}
+                            />
+
+                            <TextInput
+                                style={styles.inputContent}
+                                placeholder="내용을 입력하세요"
+                                value={content}
+                                onChangeText={setContent}
+                                multiline
+                                textAlignVertical="top"
+                            />
+
+                            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitPost}>
+                                <Text style={styles.submitBtnText}>완료</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -107,6 +207,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5F5',
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 10,
@@ -144,6 +247,11 @@ const styles = StyleSheet.create({
     listContainer: {
         padding: 20,
         paddingBottom: 80, // Space for FAB
+    },
+    emptyText: {
+        textAlign: 'center',
+        marginTop: 50,
+        color: '#999',
     },
     card: {
         backgroundColor: 'white',
@@ -226,6 +334,77 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 5,
+    },
+
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end', // Slide from bottom
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        minHeight: 500,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    modalCategoryRow: {
+        flexDirection: 'row',
+        marginBottom: 20,
+    },
+    modalCategoryBtn: {
+        marginRight: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: '#F5F5F5',
+    },
+    modalCategoryBtnActive: {
+        backgroundColor: '#4A90E2',
+    },
+    modalCategoryText: {
+        color: '#666',
+        fontWeight: '600',
+    },
+    modalCategoryTextActive: {
+        color: 'white',
+    },
+    inputTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEEEEE',
+        paddingVertical: 10,
+        marginBottom: 16,
+    },
+    inputContent: {
+        fontSize: 16,
+        color: '#333',
+        minHeight: 150,
+        marginBottom: 20,
+    },
+    submitBtn: {
+        backgroundColor: '#4A90E2',
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    submitBtnText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
 
