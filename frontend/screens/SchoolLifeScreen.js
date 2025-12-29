@@ -13,6 +13,22 @@ const MOCK_TIMETABLE = [
   { day: '금', time: '14:00-17:00', name: '캡스톤디자인', room: '실습실', color: '#E1BEE7' },
 ];
 
+const MOCK_MENUS = {
+  date: '11월 29일 (금)',
+  breakfast: [
+    { id: 1, place: '학생식당', corner: '한식', menu: '소고기미역국 & 쌀밥', price: '4,000원', time: '08:00~09:30', isSoldOut: false },
+    { id: 2, place: '기숙사식당', corner: '조식', menu: '토스트 & 시리얼', price: '3,500원', time: '07:30~09:00', isSoldOut: false },
+  ],
+  lunch: [
+    { id: 3, place: '학생식당', corner: '일품', menu: '눈꽃치즈돈까스', price: '6,500원', time: '11:30~13:30', isSoldOut: true },
+    { id: 4, place: '학생식당', corner: '양식', menu: '베이컨크림파스타', price: '5,500원', time: '11:30~13:30', isSoldOut: false },
+    { id: 5, place: '교직원식당', corner: '특선', menu: '낙지돌솥비빔밥', price: '7,000원', time: '11:30~13:30', isSoldOut: false },
+  ],
+  dinner: [
+    { id: 6, place: '기숙사식당', corner: '석식', menu: '치킨마요덮밥', price: '5,500원', time: '17:30~19:00', isSoldOut: false },
+  ]
+};
+
 const MOCK_BUS_STOPS = [
   { id: 1, name: '터미널 (야우리)', time: '08:30' },
   { id: 2, name: '천안역 (서부광장)', time: '08:40' },
@@ -48,8 +64,6 @@ const parseScheduleData = (item) => {
   const start = parseTime(startStr);
   const end = parseTime(endStr);
 
-  // Top: (StartHour - 9) * 60 + StartMinutes
-  // Height: Duration in minutes
   const top = (start.h - 9) * 60 + start.m;
   const durationMinutes = (end.h * 60 + end.m) - (start.h * 60 + start.m);
   const height = durationMinutes;
@@ -77,16 +91,13 @@ const TimeTableView = () => {
   const periods = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
   const ROW_HEIGHT = 60; // 1 hour = 60px
 
-  // Grid width calculation fix:
-  // (width - (contentPadding 20*2 + timetablePadding 10*2 + timeColumn 30)) / 5
   const colWidth = (width - 90) / 5;
 
   return (
     <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.timetableContainer}>
-        {/* Header Row */}
         <View style={styles.tableRow}>
-          <View style={{ width: 30 }} /> {/* Time column offset */}
+          <View style={{ width: 30 }} />
           {days.map(day => (
             <View key={day} style={{ width: colWidth, alignItems: 'center' }}>
               <Text style={styles.dayText}>{day}</Text>
@@ -94,9 +105,7 @@ const TimeTableView = () => {
           ))}
         </View>
 
-        {/* Grid Body */}
         <View style={{ flexDirection: 'row' }}>
-          {/* Side Column (Time) */}
           <View style={{ width: 30 }}>
             {periods.map(p => (
               <View key={p} style={styles.periodCell}>
@@ -105,21 +114,16 @@ const TimeTableView = () => {
             ))}
           </View>
 
-          {/* Main Grid area */}
           <View style={{ width: colWidth * 5, position: 'relative' }}>
-            {/* Horizontal Grid Lines */}
             {periods.map((p, i) => (
               <View key={i} style={[styles.gridLine, { top: i * ROW_HEIGHT }]} />
             ))}
 
-            {/* Vertical Grid Lines */}
             {days.map((d, i) => (
               <View key={i} style={[styles.gridVLine, { left: i * colWidth }]} />
             ))}
-            {/* Last vertical line */}
             <View style={[styles.gridVLine, { left: 5 * colWidth }]} />
 
-            {/* Class Blocks */}
             {timetable.map((item, index) => {
               const parsed = parseScheduleData(item);
               if (parsed.dayIndex === -1) return null;
@@ -158,74 +162,54 @@ const TimeTableView = () => {
 };
 
 const MenuView = () => {
-  const [currentDate, setCurrentDate] = useState(new Date("2025-10-08"));
-  const [menus, setMenus] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const menuData = MOCK_MENUS;
 
-  useEffect(() => {
-    loadMenus();
-  }, [currentDate]);
+  const renderMenuSection = (title, items, icon) => (
+    <View style={styles.menuSection}>
+      <View style={styles.sectionHeader}>
+        <Ionicons name={icon} size={20} color="#4A90E2" style={{ marginRight: 8 }} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {items.map((item) => (
+        <View key={item.id} style={[styles.menuCard, item.isSoldOut && styles.soldOutCard]}>
+          <View style={styles.menuHeader}>
+            <View style={styles.badgeRow}>
+              <View style={[styles.placeBadge, { backgroundColor: item.place === '기숙사식당' ? '#FFF3E0' : '#E3F2FD' }]}>
+                <Text style={[styles.badgeText, { color: item.place === '기숙사식당' ? '#EF6C00' : '#1E88E5' }]}>{item.place}</Text>
+              </View>
+              <View style={styles.cornerBadge}>
+                <Text style={styles.cornerText}>{item.corner}</Text>
+              </View>
+            </View>
+            <Text style={styles.menuTimeText}>{item.time}</Text>
+          </View>
 
-  const loadMenus = async () => {
-    setLoading(true);
-    const dateStr = toISODate(currentDate);
-    const data = await getMenus(dateStr);
-    setMenus(data || []);
-    setLoading(false);
-  };
+          <View style={styles.menuBody}>
+            <Text style={[styles.menuName, item.isSoldOut && styles.soldOutText]}>{item.menu}</Text>
+            {item.isSoldOut && (
+              <View style={styles.soldOutBadge}>
+                <Text style={styles.soldOutBadgeText}>품절</Text>
+              </View>
+            )}
+          </View>
 
-  const formatDate = (date) => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-    const dayName = dayNames[date.getDay()];
-    return `${month}월 ${day} 일(${dayName})`;
-  };
-
-  const handlePrevDate = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 1);
-    setCurrentDate(newDate);
-  };
-
-  const handleNextDate = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 1);
-    setCurrentDate(newDate);
-  };
+          <View style={styles.menuFooter}>
+            <Text style={styles.menuPriceText}>{item.price}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-      <View style={styles.dateNav}>
-        <TouchableOpacity onPress={handlePrevDate}>
-          <Ionicons name="chevron-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.dateNavText}>{formatDate(currentDate)}</Text>
-        <TouchableOpacity onPress={handleNextDate}>
-          <Ionicons name="chevron-forward" size={24} color="#333" />
-        </TouchableOpacity>
+      <View style={styles.dateBanner}>
+        <Text style={styles.dateBannerText}>{menuData.date}</Text>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="small" color="#4A90E2" style={{ marginTop: 20 }} />
-      ) : menus.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>등록된 식단이 없습니다.</Text>
-        </View>
-      ) : (
-        menus.map((item, idx) => (
-          <View key={idx} style={styles.menuCard}>
-            <View style={styles.menuHeader}>
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeText}>{item.type}</Text>
-              </View>
-              <Text style={styles.menuTime}>{item.time}</Text>
-            </View>
-            <Text style={styles.menuTitle}>{item.menuName || item.menu}</Text>
-            <Text style={styles.menuPrice}>{item.price}</Text>
-          </View>
-        ))
-      )}
+      {renderMenuSection('아침', menuData.breakfast, 'sunny-outline')}
+      {renderMenuSection('점심', menuData.lunch, 'partly-sunny-outline')}
+      {renderMenuSection('저녁', menuData.dinner, 'moon-outline')}
     </ScrollView>
   );
 };
@@ -247,62 +231,86 @@ const BusView = () => {
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return `${m}분 ${s < 10 ? '0' : ''}${s} 초`;
+    return `${m}분 ${s < 10 ? '0' : ''}${s}초`;
   };
 
   return (
-    <View style={styles.contentArea}>
-      <View style={{ padding: 20 }}>
-        <View style={styles.busToggle}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, direction === '등교' && styles.toggleBtnActive]}
-            onPress={() => setDirection('등교')}
-          >
-            <Text style={[styles.toggleText, direction === '등교' && styles.toggleTextActive]}>등교</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleBtn, direction === '하교' && styles.toggleBtnActive]}
-            onPress={() => setDirection('하교')}
-          >
-            <Text style={[styles.toggleText, direction === '하교' && styles.toggleTextActive]}>하교</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.busInfoCard}>
-          <Ionicons name="time" size={20} color="#4A90E2" />
-          <Text style={styles.busInfoText}>다음 버스까지 <Text style={{ fontWeight: 'bold', color: '#E53935' }}>{formatTime(timeLeft)}</Text> 남았습니다.</Text>
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {MOCK_BUS_STOPS.map((stop) => (
-            <View key={stop.id} style={styles.busItem}>
-              <View style={styles.busLine}>
-                <View style={styles.busDot} />
-                <View style={styles.busLineStick} />
-              </View>
-              <View style={styles.busContent}>
-                <Text style={styles.busStopName}>{stop.name}</Text>
-                <Text style={styles.busTime}>{stop.time} 출발</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+    <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      {/* Direction Toggle */}
+      <View style={styles.busToggleOuter}>
+        <TouchableOpacity
+          style={[styles.premiumToggleBtn, direction === '등교' && styles.premiumToggleActive]}
+          onPress={() => setDirection('등교')}
+        >
+          <Text style={[styles.premiumToggleText, direction === '등교' && styles.premiumToggleTextActive]}>등교 셔틀</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.premiumToggleBtn, direction === '하교' && styles.premiumToggleActive]}
+          onPress={() => setDirection('하교')}
+        >
+          <Text style={[styles.premiumToggleText, direction === '하교' && styles.premiumToggleTextActive]}>하교 셔틀</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Countdown Card */}
+      <View style={styles.timerCard}>
+        <View style={styles.timerIconWrapper}>
+          <Ionicons name="time" size={24} color="white" />
+        </View>
+        <View style={styles.timerContent}>
+          <Text style={styles.timerLabel}>다음 버스 도착 예정</Text>
+          <Text style={styles.timerValue}>{formatTime(timeLeft)}</Text>
+        </View>
+        <TouchableOpacity style={styles.refreshBtn}>
+          <Ionicons name="refresh" size={20} color="#4A90E2" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Bus Route List */}
+      <View style={styles.routeContainer}>
+        {MOCK_BUS_STOPS.map((stop, index) => (
+          <View key={stop.id} style={styles.busRouteItem}>
+            <View style={styles.routeLeft}>
+              <View style={[styles.routeDot, index === 0 && styles.routeDotStart]} />
+              {index !== MOCK_BUS_STOPS.length - 1 && <View style={styles.routeLine} />}
+            </View>
+            <View style={styles.routeCard}>
+              <View style={styles.routeInfo}>
+                <Text style={styles.routeName}>{stop.name}</Text>
+                <Text style={styles.routeTime}>{stop.time} 출발</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#EEE" />
+            </View>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 };
 
 const CalendarView = () => {
   return (
     <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-      <Text style={styles.calendarTitle}>📌 10월 주요 일정</Text>
+      <View style={styles.calendarHeaderRow}>
+        <Ionicons name="calendar" size={22} color="#4A90E2" />
+        <Text style={styles.calendarMainTitle}>2025학년도 10월 주요 일정</Text>
+      </View>
+
       {MOCK_EVENTS.map((event) => (
-        <View key={event.id} style={styles.eventItem}>
-          <View style={styles.dateBox}>
-            <Text style={styles.dateBoxText}>{event.date}</Text>
+        <TouchableOpacity key={event.id} style={styles.premiumEventCard} activeOpacity={0.7}>
+          <View style={styles.eventDateBadge}>
+            <Text style={styles.eventDateText}>{event.date.split('.')[1]}</Text>
+            <Text style={styles.eventMonthText}>{event.date.split('.')[0]}월</Text>
           </View>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-        </View>
+          <View style={styles.eventInfo}>
+            <Text style={styles.premiumEventTitle}>{event.title}</Text>
+            <View style={styles.eventTypeRow}>
+              <View style={styles.typeDot} />
+              <Text style={styles.eventTypeText}>학사일정</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#EEE" />
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
@@ -355,7 +363,7 @@ const SchoolLifeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F8FF',
+    backgroundColor: '#F8FAFF',
   },
   header: {
     padding: 20,
@@ -436,7 +444,7 @@ const styles = StyleSheet.create({
   periodText: {
     fontSize: 11,
     color: '#AAA',
-    marginTop: -8, // Align with grid line
+    marginTop: -8,
   },
   gridLine: {
     position: 'absolute',
@@ -477,130 +485,323 @@ const styles = StyleSheet.create({
   },
 
   // Menu Styles
-  dateNav: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+  dateBanner: {
     backgroundColor: 'white',
-    padding: 12,
+    padding: 16,
     borderRadius: 12,
-  },
-  dateNavText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginHorizontal: 20,
-  },
-  menuCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 2,
   },
-  menuHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  menuBadge: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  menuBadgeText: {
-    color: '#1E88E5',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  menuTime: {
-    color: '#AAA',
-    fontSize: 14,
-  },
-  menuTitle: {
+  dateBannerText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
   },
-  menuPrice: {
-    fontSize: 16,
+  menuSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingLeft: 4,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  menuCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  soldOutCard: {
+    backgroundColor: '#FAFAFA',
+    opacity: 0.8,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+  },
+  placeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  cornerBadge: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  cornerText: {
     color: '#666',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  menuTimeText: {
+    color: '#AAA',
+    fontSize: 12,
     fontWeight: '500',
-    textAlign: 'right',
+  },
+  menuBody: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  menuName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  soldOutText: {
+    color: '#AAA',
+    textDecorationLine: 'line-through',
+  },
+  soldOutBadge: {
+    backgroundColor: '#FF5252',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginLeft: 10,
+  },
+  soldOutBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  menuFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+    paddingTop: 10,
+    alignItems: 'flex-end',
+  },
+  menuPriceText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#4A90E2',
   },
 
   // Bus Styles
-  busToggle: {
+  busToggleOuter: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#EEE',
+    backgroundColor: '#EEF2F8',
+    borderRadius: 16,
+    padding: 6,
+    marginBottom: 24,
   },
-  toggleBtn: {
+  premiumToggleBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
-  },
-  toggleBtnActive: {
-    backgroundColor: '#4A90E2',
-  },
-  toggleText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  toggleTextActive: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  busInfoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
   },
-  busInfoText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#333',
+  premiumToggleActive: {
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  busItem: {
+  premiumToggleText: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: '700',
+  },
+  premiumToggleTextActive: {
+    color: '#4A90E2',
+  },
+  timerCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 20,
     flexDirection: 'row',
-    marginBottom: 0,
-    height: 70,
+    alignItems: 'center',
+    marginBottom: 32,
+    shadowColor: '#4A90E2',
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  busLine: {
-    width: 30,
+  timerIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  timerContent: {
+    flex: 1,
+  },
+  timerLabel: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  timerValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
+  refreshBtn: {
+    padding: 8,
+  },
+  routeContainer: {
+    paddingLeft: 10,
+  },
+  busRouteItem: {
+    flexDirection: 'row',
+    height: 80,
+  },
+  routeLeft: {
+    width: 20,
     alignItems: 'center',
   },
-  busDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4A90E2',
-    zIndex: 1,
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+    backgroundColor: 'white',
+    zIndex: 2,
+    marginTop: 6,
   },
-  busLineStick: {
+  routeDotStart: {
+    backgroundColor: '#4A90E2',
+  },
+  routeLine: {
     flex: 1,
     width: 2,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E0E7FF',
     marginTop: -2,
   },
-  busContent: {
+  routeCard: {
     flex: 1,
-    paddingLeft: 10,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginLeft: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  routeInfo: {
+    flex: 1,
+  },
+  routeName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#333',
+    marginBottom: 2,
+  },
+  routeTime: {
+    fontSize: 12,
+    color: '#AAA',
+    fontWeight: '600',
+  },
+
+  // Calendar Styles
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    marginLeft: 4,
+  },
+  calendarMainTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginLeft: 8,
+  },
+  premiumEventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#4A90E2',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  eventDateBadge: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: '#F4F7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  eventDateText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#4A90E2',
+  },
+  eventMonthText: {
+    fontSize: 10,
+    color: '#4A90E2',
+    fontWeight: '700',
+    marginTop: -2,
+  },
+  eventInfo: {
+    flex: 1,
+  },
+  premiumEventTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  eventTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4A90E2',
+    marginRight: 6,
+  },
+  eventTypeText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600',
   },
   busStopName: {
     fontSize: 16,

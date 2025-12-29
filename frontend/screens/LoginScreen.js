@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-
 import { useAuth } from '../src/contexts/AuthContext';
+
+const { height } = Dimensions.get('window');
 
 const LoginScreen = () => {
     const { login } = useAuth();
@@ -16,7 +17,6 @@ const LoginScreen = () => {
             Alert.alert('알림', '학번과 비밀번호를 입력해주세요.');
             return;
         }
-        // Mock Login Logic
         login('mock-user-token', autoLogin);
     };
 
@@ -26,20 +26,21 @@ const LoginScreen = () => {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles.content}
             >
-                <View style={styles.logoContainer}>
-                    <View style={styles.logoCircle}>
-                        <Ionicons name="school" size={60} color="white" />
+                <View style={styles.logoArea}>
+                    <View style={styles.logoIconBg}>
+                        <Ionicons name="school" size={56} color="#4A90E2" />
                     </View>
-                    <Text style={styles.logoText}>SMAT</Text>
-                    <Text style={styles.subText}>스마트한 학교 생활의 시작</Text>
+                    <Text style={styles.logoTitle}>SMAT</Text>
+                    <Text style={styles.logoSubText}>백석대학교 스마트 캠퍼스</Text>
                 </View>
 
-                <View style={styles.formContainer}>
-                    <View style={styles.inputContainer}>
+                <View style={styles.formArea}>
+                    <View style={styles.inputWrapper}>
                         <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
                         <TextInput
-                            style={styles.input}
-                            placeholder="학번"
+                            style={styles.textInput}
+                            placeholder="학번 (8자리)"
+                            placeholderTextColor="#AAA"
                             value={studentId}
                             onChangeText={setStudentId}
                             keyboardType="numeric"
@@ -47,11 +48,12 @@ const LoginScreen = () => {
                         />
                     </View>
 
-                    <View style={styles.inputContainer}>
+                    <View style={styles.inputWrapper}>
                         <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
                         <TextInput
-                            style={styles.input}
+                            style={styles.textInput}
                             placeholder="비밀번호"
+                            placeholderTextColor="#AAA"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -60,35 +62,30 @@ const LoginScreen = () => {
                     </View>
 
                     <TouchableOpacity
-                        style={styles.autoLoginRow}
+                        style={styles.checkboxRow}
                         onPress={() => setAutoLogin(!autoLogin)}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons
-                            name={autoLogin ? "checkbox" : "square-outline"}
-                            size={20}
-                            color={autoLogin ? "#4A90E2" : "#999"}
-                        />
-                        <Text style={styles.autoLoginText}>자동 로그인</Text>
+                        <View style={[styles.checkbox, autoLogin && styles.checkboxActive]}>
+                            {autoLogin && <Ionicons name="checkmark" size={12} color="white" />}
+                        </View>
+                        <Text style={styles.checkboxLabel}>자동 로그인 유지</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                        <Text style={styles.loginButtonText}>로그인</Text>
+                    <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} activeOpacity={0.8}>
+                        <Text style={styles.loginBtnText}>로그인하기</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.linkContainer}>
-                        <TouchableOpacity>
-                            <Text style={styles.linkText}>아이디 찾기</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.linkDivider}>|</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.linkText}>비밀번호 찾기</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.linkDivider}>|</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.linkText}>회원가입</Text>
-                        </TouchableOpacity>
+                    <View style={styles.footerLinks}>
+                        <TouchableOpacity><Text style={styles.link}>학번 찾기</Text></TouchableOpacity>
+                        <View style={styles.dot} />
+                        <TouchableOpacity><Text style={styles.link}>비밀번호 초기화</Text></TouchableOpacity>
+                        <View style={styles.dot} />
+                        <TouchableOpacity><Text style={styles.link}>회원가입</Text></TouchableOpacity>
                     </View>
                 </View>
+
+                <Text style={styles.copyText}>© 2025 SMAT Team. All rights reserved.</Text>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -97,104 +94,135 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#4A90E2', // Primary Brand Color Background
+        backgroundColor: '#F8FAFF',
     },
     content: {
         flex: 1,
+        paddingHorizontal: 32,
         justifyContent: 'center',
-        padding: 30,
     },
-    logoContainer: {
+    logoArea: {
         alignItems: 'center',
-        marginBottom: 50,
+        marginBottom: height * 0.08,
     },
-    logoCircle: {
+    logoIconBg: {
         width: 100,
         height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    logoText: {
-        fontSize: 40,
-        fontWeight: 'bold',
-        color: 'white',
-        letterSpacing: 2,
-    },
-    subText: {
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.9)',
-        marginTop: 8,
-    },
-    formContainer: {
+        borderRadius: 32,
         backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        marginBottom: 20,
-        paddingBottom: 8,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
-        paddingVertical: 4,
-    },
-    autoLoginRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    autoLoginText: {
-        marginLeft: 8,
-        color: '#666',
-        fontSize: 14,
-    },
-    loginButton: {
-        backgroundColor: '#4A90E2',
-        borderRadius: 12,
-        paddingVertical: 16,
+        justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
         shadowColor: '#4A90E2',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.15,
+        shadowRadius: 15,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 8,
     },
-    loginButtonText: {
+    logoTitle: {
+        fontSize: 36,
+        fontWeight: '900',
+        color: '#1A1A1A',
+        letterSpacing: 1.5,
+    },
+    logoSubText: {
+        fontSize: 15,
+        color: '#666',
+        fontWeight: '600',
+        marginTop: 6,
+    },
+    formArea: {
+        width: '100%',
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    inputIcon: {
+        marginRight: 12,
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1A1A1A',
+        fontWeight: '600',
+    },
+    checkboxRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 32,
+        marginLeft: 4,
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: '#D1D9E6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    checkboxActive: {
+        backgroundColor: '#4A90E2',
+        borderColor: '#4A90E2',
+    },
+    checkboxLabel: {
+        fontSize: 14,
+        color: '#666',
+        fontWeight: '600',
+    },
+    loginBtn: {
+        backgroundColor: '#4A90E2',
+        borderRadius: 20,
+        paddingVertical: 18,
+        alignItems: 'center',
+        shadowColor: '#4A90E2',
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 6,
+    },
+    loginBtnText: {
         color: 'white',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '800',
     },
-    linkContainer: {
+    footerLinks: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 32,
     },
-    linkText: {
-        color: '#999',
+    link: {
         fontSize: 13,
+        color: '#AAA',
+        fontWeight: '600',
     },
-    linkDivider: {
-        color: '#DDD',
-        marginHorizontal: 10,
+    dot: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: '#DDD',
+        marginHorizontal: 12,
     },
+    copyText: {
+        position: 'absolute',
+        bottom: 30,
+        alignSelf: 'center',
+        fontSize: 11,
+        color: '#CCC',
+        fontWeight: '500',
+    }
 });
 
 export default LoginScreen;

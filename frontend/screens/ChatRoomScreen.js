@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 const ChatRoomScreen = ({ route, navigation }) => {
     const { title } = route.params;
     const [messages, setMessages] = useState([
-        { id: '1', text: '안녕하세요! 혹시 출발 하셨나요?', sender: 'me', time: '10:30 AM' },
-        { id: '2', text: '네, 지금 정문 앞입니다.', sender: 'other', time: '10:31 AM' },
-        { id: '3', text: '금방 갈게요!', sender: 'me', time: '10:32 AM' },
+        { id: '1', text: '안녕하세요! 혹시 천안역 도착하셨나요?', sender: 'me', time: '오전 10:30' },
+        { id: '2', text: '네, 지금 정문 쪽 버스 정류장 앞입니다.', sender: 'other', time: '오전 10:31' },
+        { id: '3', text: '금방 갈게요! 2분 정도 걸립니다.', sender: 'me', time: '오전 10:32' },
+        { id: '4', text: '천천히 오세요~ 흰색 소나타입니다.', sender: 'other', time: '오전 10:33' },
     ]);
     const [inputText, setInputText] = useState('');
 
@@ -18,20 +21,30 @@ const ChatRoomScreen = ({ route, navigation }) => {
             id: Date.now().toString(),
             text: inputText,
             sender: 'me',
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
         };
-        setMessages([newMsg, ...messages]); // Newest first
+        setMessages([newMsg, ...messages]);
         setInputText('');
     };
 
     const renderMessage = ({ item }) => {
         const isMe = item.sender === 'me';
         return (
-            <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.otherMessage]}>
-                <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
-                    {item.text}
-                </Text>
-                <Text style={styles.messageTime}>{item.time}</Text>
+            <View style={[styles.messageWrapper, isMe ? styles.myMessageWrapper : styles.otherMessageWrapper]}>
+                {!isMe && (
+                    <View style={styles.otherAvatar}>
+                        <Ionicons name="person" size={14} color="#D1D9E6" />
+                    </View>
+                )}
+                <View style={styles.bubbleRow}>
+                    {isMe && <Text style={styles.messageTime}>{item.time}</Text>}
+                    <View style={[styles.bubble, isMe ? styles.myBubble : styles.otherBubble]}>
+                        <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+                            {item.text}
+                        </Text>
+                    </View>
+                    {!isMe && <Text style={styles.messageTime}>{item.time}</Text>}
+                </View>
             </View>
         );
     };
@@ -41,11 +54,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
+                    <Ionicons name="chevron-back" size={28} color="#1A1A1A" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
                 <TouchableOpacity style={styles.menuButton}>
-                    <Ionicons name="ellipsis-vertical" size={24} color="#333" />
+                    <Ionicons name="ellipsis-vertical" size={22} color="#1A1A1A" />
                 </TouchableOpacity>
             </View>
 
@@ -55,27 +68,36 @@ const ChatRoomScreen = ({ route, navigation }) => {
                 renderItem={renderMessage}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.messageList}
-                inverted // Start from bottom
+                inverted
+                showsVerticalScrollIndicator={false}
             />
 
             {/* Input Area */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
             >
-                <View style={styles.inputContainer}>
-                    <TouchableOpacity style={styles.plusButton}>
-                        <Ionicons name="add" size={24} color="#999" />
+                <View style={styles.inputArea}>
+                    <TouchableOpacity style={styles.attachBtn}>
+                        <Ionicons name="add-circle-outline" size={28} color="#999" />
                     </TouchableOpacity>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="메시지 입력..."
-                        value={inputText}
-                        onChangeText={setInputText}
-                    />
-                    <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                        <Ionicons name="send" size={20} color="white" />
-                    </TouchableOpacity>
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="메시지를 입력하세요..."
+                            placeholderTextColor="#AAA"
+                            value={inputText}
+                            onChangeText={setInputText}
+                            multiline
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
+                            onPress={handleSend}
+                            disabled={!inputText.trim()}
+                        >
+                            <Ionicons name="send" size={18} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -85,49 +107,85 @@ const ChatRoomScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#F8FAFF', // Unified bg
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         backgroundColor: 'white',
         borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
+        borderBottomColor: '#F0F3F8',
     },
     backButton: {
-        marginRight: 16,
+        padding: 4,
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#1A1A1A',
         flex: 1,
+        textAlign: 'center',
     },
     menuButton: {
         padding: 4,
     },
     messageList: {
-        padding: 16,
+        padding: 20,
     },
-    messageBubble: {
-        maxWidth: '75%',
-        padding: 12,
-        borderRadius: 16,
-        marginBottom: 10,
+    messageWrapper: {
+        marginBottom: 16,
+        flexDirection: 'row',
     },
-    myMessage: {
-        alignSelf: 'flex-end',
+    myMessageWrapper: {
+        justifyContent: 'flex-end',
+    },
+    otherMessageWrapper: {
+        justifyContent: 'flex-start',
+    },
+    otherAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 12,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: '#F0F3F8',
+    },
+    bubbleRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    bubble: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        maxWidth: width * 0.7,
+    },
+    myBubble: {
         backgroundColor: '#4A90E2',
         borderBottomRightRadius: 4,
+        shadowColor: '#4A90E2',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 2,
     },
-    otherMessage: {
-        alignSelf: 'flex-start',
+    otherBubble: {
         backgroundColor: 'white',
         borderBottomLeftRadius: 4,
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 5,
+        elevation: 1,
     },
     messageText: {
-        fontSize: 16,
+        fontSize: 15,
+        lineHeight: 22,
+        fontWeight: '500',
     },
     myMessageText: {
         color: 'white',
@@ -137,39 +195,51 @@ const styles = StyleSheet.create({
     },
     messageTime: {
         fontSize: 10,
-        color: 'rgba(0,0,0,0.5)',
-        marginTop: 4,
-        alignSelf: 'flex-end',
-        ...(Platform.OS === 'android' && { color: '#E0E0E0' }) // Better contrast on dark bg if needed, but bubbles handle bg
+        color: '#BBB',
+        marginHorizontal: 8,
+        fontWeight: '600',
     },
-    inputContainer: {
+    inputArea: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         backgroundColor: 'white',
         borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
+        borderTopColor: '#F0F3F8',
     },
-    plusButton: {
-        padding: 10,
+    attachBtn: {
+        padding: 6,
     },
-    input: {
+    inputWrapper: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        marginHorizontal: 10,
-        fontSize: 16,
-        maxHeight: 100,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7F9FC',
+        borderRadius: 24,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        marginLeft: 8,
     },
-    sendButton: {
+    textInput: {
+        flex: 1,
+        fontSize: 15,
+        color: '#1A1A1A',
+        paddingVertical: 8,
+        maxHeight: 100,
+        fontWeight: '500',
+    },
+    sendBtn: {
         backgroundColor: '#4A90E2',
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         justifyContent: 'center',
         alignItems: 'center',
+        marginLeft: 8,
+    },
+    sendBtnDisabled: {
+        backgroundColor: '#D1D9E6',
     },
 });
 

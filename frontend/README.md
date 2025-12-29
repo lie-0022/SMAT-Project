@@ -1,6 +1,13 @@
-# SMAT (Smart School Life) App
+# SMAT (Smart School Life) App ✨ ✨
 
-A React Native (Expo) application designed to enhance the university life experience.
+A **Premium** React Native (Expo) application designed to enhance the university life experience with a state-of-the-art Design Language.
+
+## ✨ Premium UI Overhaul
+The app has recently undergone a complete aesthetic transformation, featuring:
+- **Unified Design System**: Consistent use of primary blue (`#4A90E2`) and clean backgrounds (`#F8FAFF`).
+- **Premium Card Layouts**: High-contrast, card-based interface with professional shadows and typography.
+- **Data Synchronization**: Unified mock data across Home and School Life views (Menus, Timetable).
+- **Vibrant Components**: Modern status badges, sleek avatars, and professional iconography.
 
 ## 📱 Features
 
