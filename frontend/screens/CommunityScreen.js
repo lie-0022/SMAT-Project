@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, TouchableWithoutFeedback, Keyboard, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, TouchableWithoutFeedback, Keyboard, Alert, Dimensions, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -34,6 +34,7 @@ const CommunityScreen = ({ navigation }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [writeCategory, setWriteCategory] = useState('TAXI');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const handleWriteButton = () => {
         setWriteCategory(selectedCategory);
@@ -65,13 +66,18 @@ const CommunityScreen = ({ navigation }) => {
         }));
 
         setWriteModalVisible(false);
+        Alert.alert('성공', '게시글이 성공적으로 등록되었습니다! 🎉');
     };
 
     const renderPostItem = ({ item }) => {
         const isDone = item.status === '완료' || item.status === '판매완료';
 
         return (
-            <TouchableOpacity style={[styles.card, isDone && styles.cardDone]} activeOpacity={0.8}>
+            <TouchableOpacity
+                style={[styles.card, isDone && styles.cardDone]}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('PostDetail', { post: item, category: selectedCategory })}
+            >
                 <View style={styles.cardHeader}>
                     <View style={styles.titleRow}>
                         <Text style={[styles.postTitle, isDone && styles.postTitleDone]} numberOfLines={1}>{item.title}</Text>
@@ -132,9 +138,32 @@ const CommunityScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+                <View style={styles.searchBar}>
+                    <Ionicons name="search-outline" size={20} color="#AAA" />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="관심 있는 내용을 검색해보세요"
+                        placeholderTextColor="#AAA"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={18} color="#CCC" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+
             {/* Category Tabs */}
             <View style={styles.categoryOuter}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryContainer}
+                >
                     {CATEGORIES.map((cat) => {
                         const isActive = selectedCategory === cat.id;
                         return (
@@ -155,7 +184,10 @@ const CommunityScreen = ({ navigation }) => {
             </View>
 
             <FlatList
-                data={posts[selectedCategory]}
+                data={posts[selectedCategory].filter(post =>
+                    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (post.content && post.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                )}
                 renderItem={renderPostItem}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
@@ -163,7 +195,9 @@ const CommunityScreen = ({ navigation }) => {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="document-text-outline" size={48} color="#EEE" />
-                        <Text style={styles.emptyText}>게시글이 비어있습니다.</Text>
+                        <Text style={styles.emptyText}>
+                            {searchQuery ? '검색 결과가 없습니다.' : '게시글이 비어있습니다.'}
+                        </Text>
                     </View>
                 }
             />
@@ -265,6 +299,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#FF5252',
         borderWidth: 1.5,
         borderColor: '#F8FAFF',
+    },
+    searchContainer: {
+        paddingHorizontal: 24,
+        marginBottom: 16,
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        shadowColor: '#4A90E2',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    searchInput: {
+        flex: 1,
+        marginLeft: 12,
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#333',
     },
     categoryOuter: {
         marginBottom: 8,

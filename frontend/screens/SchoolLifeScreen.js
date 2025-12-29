@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTimetable, getMenus } from '../src/api/client';
@@ -29,13 +29,23 @@ const MOCK_MENUS = {
   ]
 };
 
-const MOCK_BUS_STOPS = [
-  { id: 1, name: '터미널 (야우리)', time: '08:30' },
-  { id: 2, name: '천안역 (서부광장)', time: '08:40' },
-  { id: 3, name: '두정역', time: '08:50' },
-  { id: 4, name: '안서동 (대학가)', time: '09:00' },
-  { id: 5, name: '학교 정문', time: '09:10' },
-];
+const MOCK_SHUTTLE_TIMES = {
+  toSchool: [ // 등교 (역 -> 학교)
+    { id: 1, time: '08:20', type: 'normal' },
+    { id: 2, time: '08:40', type: 'normal' },
+    { id: 3, time: '08:50', type: 'normal' },
+    { id: 4, time: '09:00', type: 'busiest' }, // 혼잡
+    { id: 5, time: '09:15', type: 'normal' },
+    { id: 6, time: '09:30', type: 'normal' },
+  ],
+  toHome: [ // 하교 (학교 -> 역)
+    { id: 1, time: '14:00', type: 'normal' },
+    { id: 2, time: '14:30', type: 'normal' },
+    { id: 3, time: '15:00', type: 'normal' },
+    { id: 4, time: '17:50', type: 'last' }, // 막차
+    { id: 5, time: '18:10', type: 'last' }, // 막차
+  ]
+};
 
 const MOCK_EVENTS = [
   { id: 1, date: '10.03', title: '개천절 (휴무)' },
@@ -234,6 +244,26 @@ const BusView = () => {
     return `${m}분 ${s < 10 ? '0' : ''}${s}초`;
   };
 
+  const schedule = direction === '등교' ? MOCK_SHUTTLE_TIMES.toSchool : MOCK_SHUTTLE_TIMES.toHome;
+
+  const renderBadge = (type) => {
+    if (type === 'busiest') {
+      return (
+        <View style={[styles.shuttleBadge, { backgroundColor: '#FFF3E0' }]}>
+          <Text style={[styles.shuttleBadgeText, { color: '#EF6C00' }]}>혼잡</Text>
+        </View>
+      );
+    }
+    if (type === 'last') {
+      return (
+        <View style={[styles.shuttleBadge, { backgroundColor: '#FFEBEE' }]}>
+          <Text style={[styles.shuttleBadgeText, { color: '#D32F2F' }]}>막차</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
     <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
       {/* Direction Toggle */}
@@ -266,21 +296,20 @@ const BusView = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Bus Route List */}
-      <View style={styles.routeContainer}>
-        {MOCK_BUS_STOPS.map((stop, index) => (
-          <View key={stop.id} style={styles.busRouteItem}>
-            <View style={styles.routeLeft}>
-              <View style={[styles.routeDot, index === 0 && styles.routeDotStart]} />
-              {index !== MOCK_BUS_STOPS.length - 1 && <View style={styles.routeLine} />}
+      {/* Timetable List */}
+      <View style={styles.shuttleList}>
+        {schedule.map((item) => (
+          <View key={item.id} style={styles.shuttleRow}>
+            <View style={styles.shuttleTimeBox}>
+              <Text style={styles.shuttleTimeText}>{item.time}</Text>
             </View>
-            <View style={styles.routeCard}>
-              <View style={styles.routeInfo}>
-                <Text style={styles.routeName}>{stop.name}</Text>
-                <Text style={styles.routeTime}>{stop.time} 출발</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#EEE" />
+            <View style={styles.shuttleInfoBox}>
+              <Text style={styles.shuttleStatusText}>
+                {direction === '등교' ? '역 → 학교' : '학교 → 역'}
+              </Text>
+              {renderBadge(item.type)}
             </View>
+            <Ionicons name="chevron-forward" size={16} color="#EEE" />
           </View>
         ))}
       </View>
@@ -673,64 +702,49 @@ const styles = StyleSheet.create({
   refreshBtn: {
     padding: 8,
   },
-  routeContainer: {
-    paddingLeft: 10,
+  shuttleList: {
+    paddingHorizontal: 4,
   },
-  busRouteItem: {
-    flexDirection: 'row',
-    height: 80,
-  },
-  routeLeft: {
-    width: 20,
-    alignItems: 'center',
-  },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: '#4A90E2',
-    backgroundColor: 'white',
-    zIndex: 2,
-    marginTop: 6,
-  },
-  routeDotStart: {
-    backgroundColor: '#4A90E2',
-  },
-  routeLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: '#E0E7FF',
-    marginTop: -2,
-  },
-  routeCard: {
-    flex: 1,
+  shuttleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginLeft: 16,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOpacity: 0.02,
     shadowRadius: 8,
     elevation: 1,
   },
-  routeInfo: {
-    flex: 1,
+  shuttleTimeBox: {
+    width: 60,
+    marginRight: 12,
   },
-  routeName: {
+  shuttleTimeText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#333',
-    marginBottom: 2,
+    color: '#1A1A1A',
   },
-  routeTime: {
-    fontSize: 12,
-    color: '#AAA',
+  shuttleInfoBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  shuttleStatusText: {
+    fontSize: 14,
+    color: '#666',
     fontWeight: '600',
+    marginRight: 10,
+  },
+  shuttleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  shuttleBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
 
   // Calendar Styles
@@ -802,48 +816,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     fontWeight: '600',
-  },
-  busStopName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  busTime: {
-    fontSize: 14,
-    color: '#666',
-  },
-
-  // Calendar Styles
-  calendarTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  eventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  dateBox: {
-    backgroundColor: '#F5F5F5',
-    padding: 10,
-    borderRadius: 8,
-    marginRight: 16,
-  },
-  dateBoxText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4A90E2',
-  },
-  eventTitle: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
   },
 });
 

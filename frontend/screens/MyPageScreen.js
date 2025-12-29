@@ -115,7 +115,7 @@ const MyPageScreen = () => {
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
                             <Text style={styles.statValue}>28</Text>
-                            <Text style={styles.statLabel}>채팅</Text>
+                            <Text style={styles.statLabel}>내 댓글</Text>
                         </View>
                     </View>
                 </View>

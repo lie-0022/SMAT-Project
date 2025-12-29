@@ -16,6 +16,7 @@ import NotificationsScreen from './screens/NotificationsScreen';
 import ChatListScreen from './screens/ChatListScreen';
 import ChatRoomScreen from './screens/ChatRoomScreen';
 import LoginScreen from './screens/LoginScreen';
+import PostDetailScreen from './screens/PostDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -91,6 +92,7 @@ const AppNav = () => {
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="ChatList" component={ChatListScreen} />
             <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
+            <Stack.Screen name="PostDetail" component={PostDetailScreen} />
           </>
         )}
       </Stack.Navigator>
