@@ -4,7 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTimetable, getMenus } from '../src/api/client';
 
-// --- Mock Data (Bus & Calendar still mock) ---
+// --- Mock Data ---
+const MOCK_TIMETABLE = [
+  { day: '월', time: '10:00-12:00', name: '자료구조', room: '공학관 301호', color: '#FFCDD2' },
+  { day: '화', time: '13:00-14:30', name: '알고리즘', room: '공학관 201호', color: '#BBDEFB' },
+  { day: '수', time: '09:00-11:00', name: '운영체제', room: '공학관 102호', color: '#C8E6C9' },
+  { day: '목', time: '11:00-12:30', name: '데이터베이스', room: '창조관 404호', color: '#FFF9C4' },
+  { day: '금', time: '14:00-17:00', name: '캡스톤디자인', room: '실습실', color: '#E1BEE7' },
+];
+
 const MOCK_BUS_STOPS = [
   { id: 1, name: '터미널 (야우리)', time: '08:30' },
   { id: 2, name: '천안역 (서부광장)', time: '08:40' },
@@ -29,10 +37,7 @@ const WEEK_DAYS = ['월', '화', '수', '목', '금'];
 const parseScheduleData = (item) => {
   if (!item.day || !item.time) return { dayIndex: -1, top: 0, height: 0 };
 
-  // 1. Parse Day
   const dayIndex = WEEK_DAYS.indexOf(item.day);
-
-  // 2. Parse Time (e.g., "09:00-10:15")
   const [startStr, endStr] = item.time.split('-');
 
   const parseTime = (str) => {
@@ -43,10 +48,8 @@ const parseScheduleData = (item) => {
   const start = parseTime(startStr);
   const end = parseTime(endStr);
 
-  // Calculation Logic:
   // Top: (StartHour - 9) * 60 + StartMinutes
-  // Height: (DurationMinutes / 60) * 60 = DurationMinutes
-
+  // Height: Duration in minutes
   const top = (start.h - 9) * 60 + start.m;
   const durationMinutes = (end.h * 60 + end.m) - (start.h * 60 + start.m);
   const height = durationMinutes;
@@ -68,52 +71,24 @@ const toISODate = (date) => {
 // --- Sub Components ---
 
 const TimeTableView = () => {
-  const [timetable, setTimetable] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [timetable, setTimetable] = useState(MOCK_TIMETABLE);
 
   const days = ['월', '화', '수', '목', '금'];
-  // Change to hours 09:00 ~ 18:00
   const periods = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
   const ROW_HEIGHT = 60; // 1 hour = 60px
 
-  useEffect(() => {
-    loadTimetable();
-  }, []);
-
-  const loadTimetable = async () => {
-    try {
-      const data = await getTimetable();
-      if (data && data.length > 0) {
-        setTimetable(data);
-      } else {
-        setTimetable([]);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
-  }
-
-  // Correct calculation: Total width - Container Padding(40) - Inner Padding(20) - Time Column(30) = 90
+  // Grid width calculation fix:
+  // (width - (contentPadding 20*2 + timetablePadding 10*2 + timeColumn 30)) / 5
   const colWidth = (width - 90) / 5;
 
   return (
-    <ScrollView style={styles.contentContainer}>
+    <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.timetableContainer}>
         {/* Header Row */}
         <View style={styles.tableRow}>
-          <View style={styles.tableHeaderCell} />
+          <View style={{ width: 30 }} /> {/* Time column offset */}
           {days.map(day => (
-            <View key={day} style={styles.tableHeaderCell}>
+            <View key={day} style={{ width: colWidth, alignItems: 'center' }}>
               <Text style={styles.dayText}>{day}</Text>
             </View>
           ))}
@@ -130,8 +105,8 @@ const TimeTableView = () => {
             ))}
           </View>
 
-          {/* Main Grid */}
-          <View style={{ flex: 1, position: 'relative', height: (periods.length) * ROW_HEIGHT }}>
+          {/* Main Grid area */}
+          <View style={{ width: colWidth * 5, position: 'relative' }}>
             {/* Horizontal Grid Lines */}
             {periods.map((p, i) => (
               <View key={i} style={[styles.gridLine, { top: i * ROW_HEIGHT }]} />
@@ -141,6 +116,8 @@ const TimeTableView = () => {
             {days.map((d, i) => (
               <View key={i} style={[styles.gridVLine, { left: i * colWidth }]} />
             ))}
+            {/* Last vertical line */}
+            <View style={[styles.gridVLine, { left: 5 * colWidth }]} />
 
             {/* Class Blocks */}
             {timetable.map((item, index) => {
@@ -152,7 +129,7 @@ const TimeTableView = () => {
               return (
                 <TouchableOpacity
                   key={index}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                   style={[
                     styles.classBlock,
                     {
@@ -218,7 +195,7 @@ const MenuView = () => {
   };
 
   return (
-    <ScrollView style={styles.contentContainer}>
+    <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.dateNav}>
         <TouchableOpacity onPress={handlePrevDate}>
           <Ionicons name="chevron-back" size={24} color="#333" />
@@ -274,48 +251,50 @@ const BusView = () => {
   };
 
   return (
-    <View style={styles.contentContainer}>
-      <View style={styles.busToggle}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, direction === '등교' && styles.toggleBtnActive]}
-          onPress={() => setDirection('등교')}
-        >
-          <Text style={[styles.toggleText, direction === '등교' && styles.toggleTextActive]}>등교</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, direction === '하교' && styles.toggleBtnActive]}
-          onPress={() => setDirection('하교')}
-        >
-          <Text style={[styles.toggleText, direction === '하교' && styles.toggleTextActive]}>하교</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.contentArea}>
+      <View style={{ padding: 20 }}>
+        <View style={styles.busToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, direction === '등교' && styles.toggleBtnActive]}
+            onPress={() => setDirection('등교')}
+          >
+            <Text style={[styles.toggleText, direction === '등교' && styles.toggleTextActive]}>등교</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, direction === '하교' && styles.toggleBtnActive]}
+            onPress={() => setDirection('하교')}
+          >
+            <Text style={[styles.toggleText, direction === '하교' && styles.toggleTextActive]}>하교</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.busInfoCard}>
-        <Ionicons name="time" size={20} color="#4A90E2" />
-        <Text style={styles.busInfoText}>다음 버스까지 <Text style={{ fontWeight: 'bold', color: '#E53935' }}>{formatTime(timeLeft)}</Text> 남았습니다.</Text>
-      </View>
+        <View style={styles.busInfoCard}>
+          <Ionicons name="time" size={20} color="#4A90E2" />
+          <Text style={styles.busInfoText}>다음 버스까지 <Text style={{ fontWeight: 'bold', color: '#E53935' }}>{formatTime(timeLeft)}</Text> 남았습니다.</Text>
+        </View>
 
-      <ScrollView>
-        {MOCK_BUS_STOPS.map((stop) => (
-          <View key={stop.id} style={styles.busItem}>
-            <View style={styles.busLine}>
-              <View style={styles.busDot} />
-              <View style={styles.busLineStick} />
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {MOCK_BUS_STOPS.map((stop) => (
+            <View key={stop.id} style={styles.busItem}>
+              <View style={styles.busLine}>
+                <View style={styles.busDot} />
+                <View style={styles.busLineStick} />
+              </View>
+              <View style={styles.busContent}>
+                <Text style={styles.busStopName}>{stop.name}</Text>
+                <Text style={styles.busTime}>{stop.time} 출발</Text>
+              </View>
             </View>
-            <View style={styles.busContent}>
-              <Text style={styles.busStopName}>{stop.name}</Text>
-              <Text style={styles.busTime}>{stop.time} 출발</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 };
 
 const CalendarView = () => {
   return (
-    <ScrollView style={styles.contentContainer}>
+    <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <Text style={styles.calendarTitle}>📌 10월 주요 일정</Text>
       {MOCK_EVENTS.map((event) => (
         <View key={event.id} style={styles.eventItem}>
@@ -418,7 +397,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    flex: 1,
   },
   centerContainer: {
     flex: 1,
@@ -439,17 +417,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 10,
-    minHeight: 600,
+    minHeight: 650,
   },
   tableRow: {
     flexDirection: 'row',
-    marginBottom: 4,
-    marginLeft: 30, // offset for period column
-  },
-  tableHeaderCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 4,
+    marginBottom: 10,
   },
   dayText: {
     fontSize: 14,
@@ -458,21 +430,13 @@ const styles = StyleSheet.create({
   },
   periodCell: {
     height: 60,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#EEE',
-    position: 'relative',
-    top: -30 // Adjust to align number with the line if needed, but here we want it centered in the cell?
-    // User said "그리드 가로선도 정시에 맞춰 그릴 것" -> Grid lines should match hours.
-    // If periodCell is 60px height, the text is in the middle.
-    // If we want 9, 10, 11 to be on the lines, we might need a different approach.
-    // But usually for timetables, the number is the block index or the start time.
-    // Let's keep it simple: Number in center of block representing that hour.
   },
   periodText: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 11,
+    color: '#AAA',
+    marginTop: -8, // Align with grid line
   },
   gridLine: {
     position: 'absolute',
@@ -490,11 +454,10 @@ const styles = StyleSheet.create({
   },
   classBlock: {
     position: 'absolute',
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: 6,
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    // shadow for depth
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 1 },
@@ -502,14 +465,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   classTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     marginBottom: 2,
   },
   classRoom: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#666',
   },
 
@@ -579,6 +542,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#EEE',
   },
   toggleBtn: {
     flex: 1,
