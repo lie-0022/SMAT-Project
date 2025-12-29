@@ -27,30 +27,34 @@ const { width } = Dimensions.get('window');
 const WEEK_DAYS = ['월', '화', '수', '목', '금'];
 
 const parseScheduleData = (item) => {
-  if (!item.day || !item.time) return { dayIndex: -1, startPeriodIndex: 0, duration: 0 };
+  if (!item.day || !item.time) return { dayIndex: -1, top: 0, height: 0 };
 
   // 1. Parse Day
   const dayIndex = WEEK_DAYS.indexOf(item.day);
 
-  // 2. Parse Time (e.g., "09:00-10:30")
+  // 2. Parse Time (e.g., "09:00-10:15")
   const [startStr, endStr] = item.time.split('-');
 
-  const timeToFloat = (timeStr) => {
-    const [h, m] = timeStr.split(':').map(Number);
-    return h + m / 60;
+  const parseTime = (str) => {
+    const [h, m] = str.split(':').map(Number);
+    return { h, m };
   };
 
-  const startFloat = timeToFloat(startStr);
-  const endFloat = timeToFloat(endStr);
+  const start = parseTime(startStr);
+  const end = parseTime(endStr);
 
-  const START_HOUR = 9;
-  const startPeriodIndex = startFloat - START_HOUR;
-  const duration = endFloat - startFloat;
+  // Calculation Logic:
+  // Top: (StartHour - 9) * 60 + StartMinutes
+  // Height: (DurationMinutes / 60) * 60 = DurationMinutes
+
+  const top = (start.h - 9) * 60 + start.m;
+  const durationMinutes = (end.h * 60 + end.m) - (start.h * 60 + start.m);
+  const height = durationMinutes;
 
   return {
     dayIndex,
-    startPeriodIndex,
-    duration
+    top,
+    height
   };
 };
 
@@ -58,7 +62,7 @@ const toISODate = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year} -${month} -${day} `;
+  return `${year}-${month}-${day}`;
 };
 
 // --- Sub Components ---
@@ -68,8 +72,9 @@ const TimeTableView = () => {
   const [loading, setLoading] = useState(true);
 
   const days = ['월', '화', '수', '목', '금'];
-  const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  const ROW_HEIGHT = 60;
+  // Change to hours 09:00 ~ 18:00
+  const periods = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const ROW_HEIGHT = 60; // 1 hour = 60px
 
   useEffect(() => {
     loadTimetable();
@@ -78,13 +83,9 @@ const TimeTableView = () => {
   const loadTimetable = async () => {
     try {
       const data = await getTimetable();
-      // Fallback to mock if empty/error during dev phases or show empty state
       if (data && data.length > 0) {
         setTimetable(data);
       } else {
-        // Optional: Keep a mock fallback or leave empty?
-        // User requested integration, let's assume API returns data or handle empty.
-        // For safety in this environment without real backend, I'll set empty.
         setTimetable([]);
       }
     } catch (e) {
@@ -102,6 +103,9 @@ const TimeTableView = () => {
     );
   }
 
+  // Correct calculation: Total width - Container Padding(40) - Inner Padding(20) - Time Column(30) = 90
+  const colWidth = (width - 90) / 5;
+
   return (
     <ScrollView style={styles.contentContainer}>
       <View style={styles.timetableContainer}>
@@ -117,7 +121,7 @@ const TimeTableView = () => {
 
         {/* Grid Body */}
         <View style={{ flexDirection: 'row' }}>
-          {/* Side Column (Periods) */}
+          {/* Side Column (Time) */}
           <View style={{ width: 30 }}>
             {periods.map(p => (
               <View key={p} style={styles.periodCell}>
@@ -127,40 +131,46 @@ const TimeTableView = () => {
           </View>
 
           {/* Main Grid */}
-          <View style={{ flex: 1, position: 'relative', height: periods.length * ROW_HEIGHT }}>
+          <View style={{ flex: 1, position: 'relative', height: (periods.length) * ROW_HEIGHT }}>
+            {/* Horizontal Grid Lines */}
             {periods.map((p, i) => (
               <View key={i} style={[styles.gridLine, { top: i * ROW_HEIGHT }]} />
             ))}
+
+            {/* Vertical Grid Lines */}
             {days.map((d, i) => (
-              <View key={i} style={[styles.gridVLine, { left: (i * (width - 70)) / 5 }]} />
+              <View key={i} style={[styles.gridVLine, { left: i * colWidth }]} />
             ))}
 
+            {/* Class Blocks */}
             {timetable.map((item, index) => {
               const parsed = parseScheduleData(item);
               if (parsed.dayIndex === -1) return null;
 
-              const colWidth = (width - 70) / 5;
-              const top = parsed.startPeriodIndex * ROW_HEIGHT;
-              const height = parsed.duration * ROW_HEIGHT;
               const left = parsed.dayIndex * colWidth;
 
               return (
-                <View
+                <TouchableOpacity
                   key={index}
+                  activeOpacity={0.7}
                   style={[
                     styles.classBlock,
                     {
                       left: left + 1,
-                      top: top + 1,
-                      height: height - 2,
+                      top: parsed.top + 1,
+                      height: parsed.height - 2,
                       width: colWidth - 2,
-                      backgroundColor: item.color || '#E3F2FD' // Fallback color
+                      backgroundColor: item.color || '#E3F2FD'
                     }
                   ]}
                 >
-                  <Text style={styles.classTitle}>{item.name}</Text>
-                  <Text style={styles.classRoom}>{item.room}</Text>
-                </View>
+                  <Text style={styles.classTitle} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.classRoom} numberOfLines={1}>
+                    {item.room}
+                  </Text>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -245,12 +255,12 @@ const MenuView = () => {
 
 const BusView = () => {
   const [direction, setDirection] = useState('등교');
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 0) return 15 * 60; // Reset to 15 min loop
+        if (prev <= 0) return 15 * 60;
         return prev - 1;
       });
     }, 1000);
@@ -452,6 +462,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRightWidth: 1,
     borderRightColor: '#EEE',
+    position: 'relative',
+    top: -30 // Adjust to align number with the line if needed, but here we want it centered in the cell?
+    // User said "그리드 가로선도 정시에 맞춰 그릴 것" -> Grid lines should match hours.
+    // If periodCell is 60px height, the text is in the middle.
+    // If we want 9, 10, 11 to be on the lines, we might need a different approach.
+    // But usually for timetables, the number is the block index or the start time.
+    // Let's keep it simple: Number in center of block representing that hour.
   },
   periodText: {
     fontSize: 12,
@@ -477,17 +494,23 @@ const styles = StyleSheet.create({
     padding: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    // shadow for depth
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
   },
   classTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+    marginBottom: 2,
   },
   classRoom: {
-    fontSize: 10,
-    color: '#555',
-    marginTop: 2,
+    fontSize: 9,
+    color: '#666',
   },
 
   // Menu Styles
